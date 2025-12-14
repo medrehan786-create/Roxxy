@@ -14,26 +14,23 @@ jobs:
       - name: Checkout code
         uses: actions/checkout@v4
 
-      # Node 20 (required)
       - name: Setup Node
         uses: actions/setup-node@v4
         with:
           node-version: 20
 
-      - name: Install npm dependencies
+      - name: Install dependencies
         run: npm install
 
-      - name: Build web (Vite)
+      - name: Build web
         run: npm run build
 
-      # Java 21 (required)
       - name: Setup Java
         uses: actions/setup-java@v4
         with:
           distribution: temurin
           java-version: 21
 
-      # Install Capacitor + Android
       - name: Setup Capacitor
         run: |
           npm install @capacitor/core @capacitor/cli @capacitor/android
@@ -41,31 +38,30 @@ jobs:
           npx cap add android
           npx cap copy
 
-      # 🔥 FIX KOTLIN DUPLICATE ISSUE
       - name: Fix Kotlin duplicate classes
         run: |
-          echo "Fixing Kotlin version conflicts..."
+          echo "Fixing Kotlin conflict"
 
-          # Force Kotlin version
-          sed -i '/buildscript {/a\
-              ext { kotlin_version = "1.8.22" }' android/build.gradle
+          echo "buildscript { ext { kotlin_version = '1.8.22' } }" >> android/build.gradle
 
-          # Force resolution strategy
-          sed -i '1i\
-configurations.all {\n    resolutionStrategy {\n        force "org.jetbrains.kotlin:kotlin-stdlib:1.8.22"\n        force "org.jetbrains.kotlin:kotlin-stdlib-jdk7:1.8.22"\n        force "org.jetbrains.kotlin:kotlin-stdlib-jdk8:1.8.22"\n    }\n}\n' android/app/build.gradle
+          echo "configurations.all {" >> android/app/build.gradle
+          echo "  resolutionStrategy {" >> android/app/build.gradle
+          echo "    force 'org.jetbrains.kotlin:kotlin-stdlib:1.8.22'" >> android/app/build.gradle
+          echo "    force 'org.jetbrains.kotlin:kotlin-stdlib-jdk7:1.8.22'" >> android/app/build.gradle
+          echo "    force 'org.jetbrains.kotlin:kotlin-stdlib-jdk8:1.8.22'" >> android/app/build.gradle
+          echo "  }" >> android/app/build.gradle
+          echo "}" >> android/app/build.gradle
 
-          # Ensure kotlin stdlib
-          sed -i '/dependencies {/a\
-              implementation "org.jetbrains.kotlin:kotlin-stdlib:1.8.22"' android/app/build.gradle
+          echo "dependencies {" >> android/app/build.gradle
+          echo "  implementation 'org.jetbrains.kotlin:kotlin-stdlib:1.8.22'" >> android/app/build.gradle
+          echo "}" >> android/app/build.gradle
 
-      # Build APK
       - name: Build APK
         run: |
           cd android
           chmod +x gradlew
           ./gradlew assembleDebug
 
-      # Upload APK
       - name: Upload APK
         uses: actions/upload-artifact@v4
         with:
