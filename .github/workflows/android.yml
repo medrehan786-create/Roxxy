@@ -32,10 +32,11 @@ jobs:
 
       - name: Setup Capacitor Android
         run: |
-          npm install @capacitor/core @capacitor/cli
+          npm install @capacitor/core @capacitor/cli @capacitor/android
           npx cap init Roxxy com.roxxy.app --web-dir=dist
           npx cap add android
           npx cap copy
+
 
       - name: Build APK
         run: |
