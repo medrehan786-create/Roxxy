@@ -1,4 +1,3 @@
-
 name: Build APK
 
 on:
@@ -11,60 +10,58 @@ jobs:
     runs-on: ubuntu-latest
 
     steps:
-      # 1️⃣ Checkout
-      - name: Checkout
+      # 1️⃣ Checkout code
+      - name: Checkout repository
         uses: actions/checkout@v4
 
-      # 2️⃣ Node
+      # 2️⃣ Setup Node.js (NO cache to avoid lockfile error)
       - name: Setup Node
         uses: actions/setup-node@v4
         with:
           node-version: 18
-          cache: npm
 
-      # 3️⃣ Clean install (fixes npm errors)
+      # 3️⃣ Install dependencies
       - name: Install dependencies
-        run: |
-          rm -rf node_modules package-lock.json
-          npm install
+        run: npm install
 
-      # 4️⃣ ENV (prevents env crash)
+      # 4️⃣ Create env file (prevents env crash)
       - name: Create env.local
         run: |
           echo "NODE_ENV=production" > .env.local
 
-      # 5️⃣ Build web (FAILS HERE MOSTLY)
+      # 5️⃣ Build web app
       - name: Build web
         run: npm run build
 
-      # 6️⃣ Java
+      # 6️⃣ Setup Java (required for Android)
       - name: Setup Java
         uses: actions/setup-java@v4
         with:
           distribution: temurin
           java-version: 17
 
-      # 7️⃣ Capacitor Android (SAFE MODE)
-      - name: Capacitor setup
+      # 7️⃣ Setup Capacitor + Android
+      - name: Capacitor Android setup
         run: |
           npm install @capacitor/core @capacitor/cli
           npx cap init MyApp com.my.app --web-dir=dist --no-interactive
           npx cap add android
           npx cap copy
 
-      # 8️⃣ Gradle permission
-      - name: Grant gradle permission
+      # 8️⃣ Grant Gradle permission
+      - name: Grant Gradle permission
         run: chmod +x android/gradlew
 
-      # 9️⃣ Build APK
+      # 9️⃣ Build Debug APK
       - name: Build APK
         run: |
           cd android
           ./gradlew assembleDebug --stacktrace
 
-      # 🔟 Upload APK
+      # 🔟 Upload APK artifact
       - name: Upload APK
         uses: actions/upload-artifact@v4
         with:
           name: app-debug-apk
           path: android/app/build/outputs/apk/debug/app-debug.apk
+
