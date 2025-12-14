@@ -1,9 +1,9 @@
+
 name: Build APK
 
 on:
   push:
-    branches:
-      - main
+    branches: [ "main" ]
   workflow_dispatch:
 
 jobs:
@@ -11,39 +11,58 @@ jobs:
     runs-on: ubuntu-latest
 
     steps:
-      - name: Checkout repository
+      # 1️⃣ Checkout
+      - name: Checkout
         uses: actions/checkout@v4
 
-      - name: Setup Node.js
+      # 2️⃣ Node
+      - name: Setup Node
         uses: actions/setup-node@v4
         with:
           node-version: 18
+          cache: npm
 
+      # 3️⃣ Clean install (fixes npm errors)
       - name: Install dependencies
-        run: npm install
+        run: |
+          rm -rf node_modules package-lock.json
+          npm install
 
-      - name: Build Web App
+      # 4️⃣ ENV (prevents env crash)
+      - name: Create env.local
+        run: |
+          echo "NODE_ENV=production" > .env.local
+
+      # 5️⃣ Build web (FAILS HERE MOSTLY)
+      - name: Build web
         run: npm run build
 
+      # 6️⃣ Java
       - name: Setup Java
         uses: actions/setup-java@v4
         with:
           distribution: temurin
           java-version: 17
 
-      - name: Install Capacitor
+      # 7️⃣ Capacitor Android (SAFE MODE)
+      - name: Capacitor setup
         run: |
           npm install @capacitor/core @capacitor/cli
-          npx cap init MyApp com.my.app --web-dir=build
+          npx cap init MyApp com.my.app --web-dir=dist --no-interactive
           npx cap add android
           npx cap copy
 
-      - name: Build Debug APK
+      # 8️⃣ Gradle permission
+      - name: Grant gradle permission
+        run: chmod +x android/gradlew
+
+      # 9️⃣ Build APK
+      - name: Build APK
         run: |
           cd android
-          chmod +x gradlew
-          ./gradlew assembleDebug
+          ./gradlew assembleDebug --stacktrace
 
+      # 🔟 Upload APK
       - name: Upload APK
         uses: actions/upload-artifact@v4
         with:
